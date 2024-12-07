@@ -15,8 +15,14 @@ fn solve(input: &str) -> i64 {
         .sum()
 }
 
+fn solve_with_enabling(input: &str) -> i64 {
+    let regex = Regex::new(r"(?s)don't\(\).*?(do\(\)|$)").unwrap();
+    regex.split(input).map(solve).sum()
+}
+
 fn main() -> Result<(), Error> {
     let input: String = read_to_string(Path::new("data/input03.txt"))?;
     println!("{}", solve(&input));
+    println!("{}", solve_with_enabling(&input));
     Ok(())
 }
