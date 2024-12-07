@@ -9,6 +9,7 @@ fn main() -> Result<(), Error> {
         .collect();
 
     println!("{}", solve(&input));
+    println!("{}", solve_x(&input));
     Ok(())
 }
 
@@ -45,4 +46,24 @@ fn solve(input: &[Vec<char>]) -> usize {
                 .sum::<usize>()
         })
         .sum()
+}
+fn solve_x(input: &[Vec<char>]) -> usize {
+    let nrows = input.len();
+    let ncols = input[0].len();
+
+    (1..nrows - 1)
+        .map(|r| {
+            (1..ncols - 1)
+                .filter(|&c| {
+                    input[r][c] == 'A'
+                        && has_xs(input[r - 1][c - 1], input[r + 1][c + 1])
+                        && has_xs(input[r - 1][c + 1], input[r + 1][c - 1])
+                })
+                .count()
+        })
+        .sum()
+}
+
+fn has_xs(a: char, b: char) -> bool {
+    a != b && [a, b].iter().all(|&c| c == 'M' || c == 'S')
 }
