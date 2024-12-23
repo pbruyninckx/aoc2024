@@ -6,21 +6,60 @@ use std::path::Path;
 
 fn main() -> Result<(), Error> {
     let input = Input::from_str(&read_to_string(Path::new("data/input06.txt"))?);
-    println!("{}", solve(&input));
+    let positions = get_positions(&input);
+    println!("{}", positions.len());
+    println!("{}", solve2(&input, &positions));
     Ok(())
 }
 
-fn solve(input: &Input) -> i32 {
-    let mut pos = input.start;
-    let mut direction = Direction::Up;
-    let mut seen: HashSet<(i32, i32)> = HashSet::new();
-    while input.contains(&pos) {
-        (pos, direction) = input.next_state(&pos, direction);
-        seen.insert(pos);
+fn solve2(input: &Input, positions: &HashSet<Pos>) -> i32 {
+    let mut changed_input = input.clone();
+    positions
+        .iter()
+        .filter(|&pos| {
+            if *pos != input.start && input.contains(pos) {
+                changed_input.map[pos.0 as usize][pos.1 as usize] = Tile::Obstacle;
+                let ret = has_loop(&changed_input);
+                changed_input.map[pos.0 as usize][pos.1 as usize] = Tile::Empty;
+                ret
+            } else {
+                false
+            }
+        })
+        .count() as i32
+}
+fn has_loop(input: &Input) -> bool {
+    let mut state = State {
+        pos: input.start,
+        direction: Direction::Up,
+    };
+    let mut seen: HashSet<State> = HashSet::new();
+    loop {
+        state = input.next_state(&state);
+        if seen.contains(&state) {
+            return true;
+        }
+        if !input.contains(&state.pos) {
+            return false;
+        }
+        seen.insert(state.clone());
     }
-    seen.len() as i32
 }
 
+fn get_positions(input: &Input) -> HashSet<Pos> {
+    let mut state = State {
+        pos: input.start,
+        direction: Direction::Up,
+    };
+    let mut seen: HashSet<Pos> = HashSet::new();
+    while input.contains(&state.pos) {
+        state = input.next_state(&state);
+        seen.insert(state.pos);
+    }
+    seen
+}
+
+#[derive(Eq, Hash, PartialEq, Clone, Copy)]
 enum Direction {
     Up,
     Right,
@@ -39,16 +78,25 @@ impl Direction {
     }
 }
 
-#[derive(Eq, Hash, PartialEq)]
+#[derive(Eq, Hash, PartialEq, Clone, Copy)]
 enum Tile {
     Empty,
     Obstacle,
 }
 
+type Pos = (i32, i32);
+
+#[derive(Eq, Hash, PartialEq, Clone)]
+struct State {
+    pos: Pos,
+    direction: Direction,
+}
+
+#[derive(Clone)]
 struct Input {
     map: Vec<Vec<Tile>>,
-    start: (i32, i32),
-    size: (i32, i32),
+    start: Pos,
+    size: Pos,
 }
 
 impl Input {
@@ -80,31 +128,34 @@ impl Input {
         }
     }
 
-    fn contains(&self, pos: &(i32, i32)) -> bool {
+    fn contains(&self, pos: &Pos) -> bool {
         0 <= pos.0 && pos.0 < self.size.0 && 0 <= pos.1 && pos.1 < self.size.1
     }
 
-    fn next_state(&self, pos: &(i32, i32), direction: Direction) -> ((i32, i32), Direction) {
-        let mut direction = direction;
+    fn next_state(&self, state: &State) -> State {
+        let mut direction = state.direction;
         loop {
-            let next_pos = move_(pos, &direction);
+            let next_pos = move_(&state.pos, &direction);
             if !self.contains(&next_pos) || self[&next_pos] == Tile::Empty {
-                return (next_pos, direction);
+                return State {
+                    pos: next_pos,
+                    direction,
+                };
             }
             direction = direction.next();
         }
     }
 }
 
-impl Index<&(i32, i32)> for Input {
+impl Index<&Pos> for Input {
     type Output = Tile;
 
-    fn index(&self, pos: &(i32, i32)) -> &Self::Output {
+    fn index(&self, pos: &Pos) -> &Self::Output {
         &self.map[pos.0 as usize][pos.1 as usize]
     }
 }
 
-fn move_(pos: &(i32, i32), direction: &Direction) -> (i32, i32) {
+fn move_(pos: &Pos, direction: &Direction) -> Pos {
     match direction {
         Direction::Up => (pos.0 - 1, pos.1),
         Direction::Right => (pos.0, pos.1 + 1),
