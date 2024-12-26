@@ -1,17 +1,20 @@
 use anyhow::Error;
 use itertools::Itertools;
+use std::collections::HashMap;
 use std::fs::read_to_string;
 use std::ops::Index;
 use std::path::Path;
 
 fn main() -> Result<(), Error> {
     let map = Map::from_str(&read_to_string(Path::new("data/input10.txt"))?)?;
-    println!("{}", solve(&map));
+    for score_fn in [trailhead_score, trailhead_rating] {
+        println!("{}", solve(&map, score_fn));
+    }
 
     Ok(())
 }
 
-fn solve(map: &Map) -> u32 {
+fn solve(map: &Map, score_fn: fn(&Map, &Pos) -> u32) -> u32 {
     let start_points = map.data.iter().enumerate().flat_map(|(y, row)| {
         row.iter().enumerate().filter_map(move |(x, &height)| {
             if height == 0 {
@@ -25,7 +28,7 @@ fn solve(map: &Map) -> u32 {
         })
     });
 
-    start_points.map(|pos| trailhead_score(map, &pos)).sum()
+    start_points.map(|pos| score_fn(map, &pos)).sum()
 }
 
 fn trailhead_score(map: &Map, start: &Pos) -> u32 {
@@ -40,6 +43,27 @@ fn trailhead_score(map: &Map, start: &Pos) -> u32 {
     }
 
     positions.len() as u32
+}
+
+fn trailhead_rating(map: &Map, start: &Pos) -> u32 {
+    let mut positions: HashMap<Pos, u32> = HashMap::from([(*start, 1)]);
+    for i in 1..10 {
+        positions = positions
+            .iter()
+            .flat_map(|(pos, &count)| {
+                map.neighbors(pos)
+                    .iter()
+                    .map(move |neighbor| (*neighbor, count))
+                    .collect::<Vec<_>>()
+            })
+            .filter(|(pos, _)| map[pos] == i)
+            .fold(HashMap::new(), |mut acc, (pos, count)| {
+                acc.entry(pos).and_modify(|c| *c += count).or_insert(count);
+                acc
+            });
+    }
+
+    positions.values().sum()
 }
 
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Debug)]
