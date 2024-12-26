@@ -1,11 +1,14 @@
 use anyhow::Error;
+use std::collections::HashMap;
 use std::fs::read_to_string;
 use std::path::Path;
 
 fn main() -> Result<(), Error> {
     let input = parse_input(&read_to_string(Path::new("data/input11.txt"))?)?;
 
-    println!("{}", solve(&input));
+    for num_iterations in [25, 75] {
+        println!("{}", solve(&input, num_iterations));
+    }
 
     Ok(())
 }
@@ -39,12 +42,18 @@ fn blink(n: u64) -> Vec<u64> {
     }
 }
 
-fn solve(input: &[u64]) -> usize {
-    let mut numbers = input.to_vec();
-    for _ in 0..25 {
-        numbers = numbers.iter().flat_map(|&n| blink(n)).collect();
+fn solve(input: &[u64], num_iterations: u32) -> usize {
+    let mut numbers: HashMap<u64, usize> = input.iter().map(|&n| (n, 1)).collect();
+    for _ in 0..num_iterations {
+        numbers = numbers
+            .iter()
+            .flat_map(|(&n, &count)| blink(n).iter().map(|&n| (n, count)).collect::<Vec<_>>())
+            .fold(HashMap::new(), |mut acc, (n, count)| {
+                acc.entry(n).and_modify(|e| *e += count).or_insert(count);
+                acc
+            })
     }
-    numbers.len()
+    numbers.values().sum()
 }
 
 fn parse_input(input: &str) -> Result<Vec<u64>, Error> {
