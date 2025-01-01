@@ -1,12 +1,51 @@
 use anyhow::Error;
 use num_traits::cast::AsPrimitive;
 use std::fmt::{Display, Formatter};
-use std::ops::{Index, IndexMut};
+use std::ops::{Add, Index, IndexMut, Mul, Rem, RemAssign};
 
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Debug)]
 pub struct Pos {
     pub x: i32,
     pub y: i32,
+}
+
+impl Add for Pos {
+    type Output = Pos;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
+    }
+}
+
+impl Mul<i32> for Pos {
+    type Output = Pos;
+
+    fn mul(self, rhs: i32) -> Self::Output {
+        Self {
+            x: self.x * rhs,
+            y: self.y * rhs,
+        }
+    }
+}
+
+impl Rem for Pos {
+    type Output = Pos;
+    fn rem(self, rhs: Self) -> Self::Output {
+        Self {
+            x: self.x.rem_euclid(rhs.x),
+            y: self.y.rem_euclid(rhs.y),
+        }
+    }
+}
+
+impl RemAssign for Pos {
+    fn rem_assign(&mut self, rhs: Self) {
+        self.x = self.x.rem_euclid(rhs.x);
+        self.y = self.y.rem_euclid(rhs.y);
+    }
 }
 
 pub struct Map<T> {
