@@ -48,6 +48,7 @@ impl RemAssign for Pos {
     }
 }
 
+#[derive(Clone)]
 pub struct Map<T> {
     pub size: Pos,
     pub data: Vec<Vec<T>>,
