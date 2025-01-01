@@ -1,8 +1,10 @@
-use crate::utils::map::Pos;
+use crate::utils::map::{Map, Pos};
 use anyhow::Error;
 use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
-use std::fs::read_to_string;
+use std::fs::{read_to_string, File};
+use std::io::BufWriter;
+use std::io::Write;
 use std::path::Path;
 
 mod utils;
@@ -11,6 +13,7 @@ fn main() -> Result<(), Error> {
     let input = Robot::from_multi_str(&read_to_string(Path::new("data/input14.txt"))?)?;
 
     println!("{}", solve(&input, Pos { x: 101, y: 103 }));
+    display_trees(&input, Pos { x: 101, y: 103 });
 
     Ok(())
 }
@@ -27,7 +30,7 @@ fn get_quadrant(pos: &Pos, size: &Pos) -> Option<usize> {
     }
 }
 
-fn solve(robots: &[Robot], size: Pos) -> i32 {
+fn solve(robots: &[Robot], size: Pos) -> i64 {
     robots
         .iter()
         .map(|robot| (robot.position + robot.velocity * 100) % size)
@@ -39,6 +42,32 @@ fn solve(robots: &[Robot], size: Pos) -> i32 {
         })
         .iter()
         .product()
+}
+
+fn display_trees(robots: &[Robot], size: Pos) {
+    let file = File::create("data/output14.txt").unwrap();
+    let mut f = BufWriter::new(file);
+    for i in 0..10000 {
+        writeln!(&mut f, "Iteration {}", i).unwrap();
+        let positions = robots
+            .iter()
+            .map(|robot| (robot.position + robot.velocity * i) % size)
+            .collect::<Vec<_>>();
+        display(&mut f, &positions, &size);
+    }
+}
+
+fn display<T: std::io::Write>(f: &mut BufWriter<T>, positions: &[Pos], size: &Pos) {
+    let mut map = Map::<char> {
+        size: *size,
+        data: vec![vec![' '; size.x as usize]; size.y as usize],
+    };
+    for pos in positions {
+        map.data[pos.y as usize][pos.x as usize] = '#';
+    }
+    for line in &map.data {
+        writeln!(f, "{}", line.iter().collect::<String>()).unwrap();
+    }
 }
 
 #[derive(Debug)]
@@ -55,10 +84,10 @@ impl Robot {
         RE.captures_iter(input)
             .map(&|caps: Captures| {
                 let (_, vals): (&str, [&str; 4]) = caps.extract();
-                let [px, py, vx, vy]: [i32; 4] = vals
+                let [px, py, vx, vy]: [i64; 4] = vals
                     .iter()
-                    .map(|s| s.parse::<i32>())
-                    .collect::<Result<Vec<i32>, _>>()?
+                    .map(|s| s.parse::<i64>())
+                    .collect::<Result<Vec<i64>, _>>()?
                     .try_into()
                     .unwrap();
 

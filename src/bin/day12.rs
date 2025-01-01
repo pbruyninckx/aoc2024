@@ -107,7 +107,7 @@ fn compute_price(map: &Map<char>, start: Pos, processed: &mut Map<bool>) -> (u64
     (area, border, num_sides)
 }
 
-fn get_neighbouring_border((pos, dir): &(Pos, Direction), delta: i32) -> (Pos, Direction) {
+fn get_neighbouring_border((pos, dir): &(Pos, Direction), delta: i64) -> (Pos, Direction) {
     let result_pos = match dir {
         Direction::Up | Direction::Down => Pos {
             x: pos.x + delta,

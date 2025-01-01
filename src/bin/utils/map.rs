@@ -5,8 +5,8 @@ use std::ops::{Add, Index, IndexMut, Mul, Rem, RemAssign};
 
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Debug)]
 pub struct Pos {
-    pub x: i32,
-    pub y: i32,
+    pub x: i64,
+    pub y: i64,
 }
 
 impl Add for Pos {
@@ -20,10 +20,10 @@ impl Add for Pos {
     }
 }
 
-impl Mul<i32> for Pos {
+impl Mul<i64> for Pos {
     type Output = Pos;
 
-    fn mul(self, rhs: i32) -> Self::Output {
+    fn mul(self, rhs: i64) -> Self::Output {
         Self {
             x: self.x * rhs,
             y: self.y * rhs,
@@ -82,8 +82,8 @@ impl<T: 'static + ConvertibleFromChar + Copy> Map<T> {
             .map(|l| l.chars().map(T::from_char).collect())
             .collect::<Result<Vec<_>, _>>()?;
         let size = Pos {
-            x: data.first().ok_or(Error::msg("Empty data"))?.len() as i32,
-            y: data.len() as i32,
+            x: data.first().ok_or(Error::msg("Empty data"))?.len() as i64,
+            y: data.len() as i64,
         };
         Ok(Self { data, size })
     }
