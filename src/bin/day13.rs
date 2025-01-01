@@ -6,10 +6,19 @@ use std::path::Path;
 fn main() -> Result<(), Error> {
     let configs = parse_input(&read_to_string(Path::new("data/input13.txt"))?)?;
 
-    println!("{}", configs.iter().map(solve_brute_force).sum::<i64>());
+    println!("{}", configs.iter().map(solve_direct).sum::<i64>());
+    println!(
+        "{}",
+        configs
+            .iter()
+            .map(config_part_two)
+            .map(|c| solve_direct(&c))
+            .sum::<i64>()
+    );
     Ok(())
 }
 
+#[derive(Clone)]
 struct Config {
     ax: i64,
     ay: i64,
@@ -19,6 +28,15 @@ struct Config {
     py: i64,
 }
 
+fn config_part_two(config: &Config) -> Config {
+    let mut ret = config.clone();
+    let increase = 10000000000000;
+    ret.px += increase;
+    ret.py += increase;
+    ret
+}
+
+#[allow(dead_code)]
 fn solve_brute_force(config: &Config) -> i64 {
     (0..100)
         .flat_map(|a| {
@@ -34,6 +52,19 @@ fn solve_brute_force(config: &Config) -> i64 {
         })
         .min()
         .unwrap_or(0)
+}
+
+fn solve_direct(c: &Config) -> i64 {
+    let d = c.ax * c.by - c.ay * c.bx;
+    let da = c.px * c.by - c.py * c.bx;
+    let db = c.ax * c.py - c.ay * c.px;
+    if da % d == 0 && db % d == 0 {
+        let a = da / d;
+        let b = db / d;
+        3 * a + b
+    } else {
+        0
+    }
 }
 
 fn parse_input(s: &str) -> Result<Vec<Config>, Error> {
