@@ -1,4 +1,4 @@
-mod utils;
+pub mod utils;
 
 use crate::utils::map::Pos;
 use anyhow::Error;

@@ -6,7 +6,7 @@ use std::fmt::{Debug, Formatter};
 use std::fs::read_to_string;
 use std::path::Path;
 
-mod utils;
+pub mod utils;
 
 fn main() -> Result<(), Error> {
     let (map, start, directions) = parse_input(&read_to_string(Path::new("data/input15.txt"))?)?;

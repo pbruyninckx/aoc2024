@@ -7,7 +7,7 @@ use std::io::BufWriter;
 use std::io::Write;
 use std::path::Path;
 
-mod utils;
+pub mod utils;
 
 fn main() -> Result<(), Error> {
     let input = Robot::from_multi_str(&read_to_string(Path::new("data/input14.txt"))?)?;
