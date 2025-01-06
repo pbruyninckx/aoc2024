@@ -1,32 +1,61 @@
 use anyhow::Error;
+use itertools::Itertools;
 use std::fs::read_to_string;
 use std::path::Path;
-use itertools::Itertools;
 
 fn main() -> Result<(), Error> {
     let (state, program) = parse_input(&read_to_string(Path::new("data/input17.txt"))?)?;
     let final_state = solve(&program, &state);
-    println!("{}", final_state.output.iter().map(|i| i.to_string()).join(","));
+    println!(
+        "{}",
+        final_state.output.iter().map(|i| i.to_string()).join(",")
+    );
+    println!("{}", solve2(&program, &state));
     Ok(())
 }
 
-fn solve(program: &Vec<i64>, start_state: &State) -> State {
+fn solve(program: &[i64], start_state: &State) -> State {
     let mut state = start_state.clone();
     while 0 <= state.ip && state.ip < program.len() as i64 {
         let ip = state.ip as usize;
-        get_instruction(program[ip])(program[ip+1], &mut state);
+        get_instruction(program[ip])(program[ip + 1], &mut state);
         state.ip += 2;
     }
     state
 }
 
-fn combo(operand: i64, state: &State) -> i64{
+fn solve2(program: &[i64], start_state: &State) -> i64 {
+    let mut result = 0;
+    for i in 0..(program.len() / 2) {
+        result *= 64;
+        for a in 0..63 {
+            let state = {
+                let mut state = start_state.clone();
+                state.a = result + a;
+                state
+            };
+            let output = solve(program, &state).output;
+            if output.len() % 2 != 0 {
+                continue;
+            }
+            if output[0] == program[program.len() - 2 * i - 2]
+                && output[1] == program[program.len() - 2 * i - 1]
+            {
+                result += a;
+                break;
+            }
+        }
+    }
+    result
+}
+
+fn combo(operand: i64, state: &State) -> i64 {
     match operand {
-         0 | 1 | 2 | 3 => operand,
+        0..=3 => operand,
         4 => state.a,
         5 => state.b,
         6 => state.c,
-        _ => panic!("Unexpected combo operand")
+        _ => panic!("Unexpected combo operand"),
     }
 }
 
@@ -44,7 +73,7 @@ fn bst(operand: i64, state: &mut State) {
 
 fn jnz(operand: i64, state: &mut State) {
     if state.a != 0 {
-        state.ip = operand - 2; // Correct for +2 afterwards
+        state.ip = operand - 2; // Correct for +2 afterward
     }
 }
 fn bxc(_operand: i64, state: &mut State) {
@@ -53,7 +82,7 @@ fn bxc(_operand: i64, state: &mut State) {
 fn out(operand: i64, state: &mut State) {
     let output = combo(operand, state) % 8;
     state.output.push(output);
-
+    // print!("{},", output);
 }
 fn bdv(operand: i64, state: &mut State) {
     state.b = state.a >> combo(operand, state);
@@ -64,18 +93,17 @@ fn cdv(operand: i64, state: &mut State) {
 
 fn get_instruction(opcode: i64) -> fn(i64, &mut State) {
     match opcode {
-        0=> adv,
-        1=> bxl,
-        2=> bst,
-        3=> jnz,
-        4=> bxc,
-        5=> out,
-        6=> bdv,
-        7=> cdv,
-        _ => panic!("Unexpected instruction opcode")
+        0 => adv,
+        1 => bxl,
+        2 => bst,
+        3 => jnz,
+        4 => bxc,
+        5 => out,
+        6 => bdv,
+        7 => cdv,
+        _ => panic!("Unexpected instruction opcode"),
     }
 }
-
 
 fn parse_register(line: &str) -> Result<i64, Error> {
     Ok(line
@@ -97,8 +125,7 @@ fn parse_input(input: &str) -> Result<(State, Vec<i64>), Error> {
         .next()
         .ok_or(Error::msg("'Program:' missing"))?
         .split_whitespace()
-        .skip(1)
-        .next()
+        .nth(1)
         .ok_or(Error::msg("Invalid formatting of program line"))?
         .split(',')
         .map(|x| x.parse::<i64>())
@@ -121,35 +148,40 @@ struct State {
 
 impl State {
     fn new(a: i64, b: i64, c: i64) -> Self {
-        Self { a, b, c, ip: 0, output: vec![] }
+        Self {
+            a,
+            b,
+            c,
+            ip: 0,
+            output: vec![],
+        }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test1(){
+    fn test1() {
         let state = State::new(0, 0, 9);
         let program = vec![2, 6];
         assert_eq!(solve(&program, &state).b, 1);
     }
 
     #[test]
-    fn test2(){
+    fn test2() {
         let state = State::new(10, 0, 0);
-        let program = vec![5,0,5,1,5,4];
-        assert_eq!(solve(&program, &state).output, vec![0,1,2]);
+        let program = vec![5, 0, 5, 1, 5, 4];
+        assert_eq!(solve(&program, &state).output, vec![0, 1, 2]);
     }
 
     #[test]
-    fn test3(){
+    fn test3() {
         let state = State::new(2024, 0, 0);
-        let program = vec![0,1,5,4,3,0];
+        let program = vec![0, 1, 5, 4, 3, 0];
         let final_state = solve(&program, &state);
-        assert_eq!(final_state.output, vec![4,2,5,6,7,7,7,7,3,1,0]);
+        assert_eq!(final_state.output, vec![4, 2, 5, 6, 7, 7, 7, 7, 3, 1, 0]);
         assert_eq!(final_state.a, 0);
     }
 }
